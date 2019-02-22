@@ -1,0 +1,369 @@
+'##############################################################################################
+' Driverscript for Hybrideframework Version: v1.0 for smoke suite
+' Date of Creation			: 8th May 2017
+' Date of Modified			: 27th July 2018
+' Library functions added	: UtilityFunctions.vbs, GenericFunctions.vbs
+' Developed by				: Santhosh Reddy(sr59298)
+' Updated by 				: Saurabh Sharma (ss16890)
+'##############################################################################################
+Option Explicit
+Dim intModuleRowCount
+Dim inti, intj, intk
+Dim strModExecutionFlag
+Dim strModID
+Dim intTCCount
+Dim strTCExecutionFlag
+Dim strTCID
+Dim strTCModID
+Dim intTSRowCount
+Dim strTSID
+Dim strTSFun
+Dim strTSTCID
+Dim strKeyword
+Dim strRootFolder
+On Error Resume Next
+Setting("SnapshotReportMode") = 1
+'Getting the rootfolder of the Framework for relative paths
+strRootFolder = Environment("TestDir")
+strRootFolder = Mid(strRootFolder,1,Instr(strRootFolder, "Driver")-2)
+Environment("FrameworkRootFolder") = strRootFolder
+
+''html report library file
+'LoadFunctionLibrary strRootFolder&"\LibraryFunctions\htmlReport.vbs"
+'
+''Loading the Libraryfunctions
+'LoadFunctionLibrary strRootFolder&"\LibraryFunctions\UtilityFunctions.vbs", strRootFolder&"\LibraryFunctions\GenericFunctions.vbs"
+'
+''Loading testcase scripts
+'LoadFunctionLibrary strRootFolder&"\TestCaseFunctions\TestCaseFunctions.vbs"
+'LoadFunctionLibrary strRootFolder&"\TestCaseFunctions\SupplementaryDataLoad.vbs"
+
+'Loading the repositories
+'Repositoriescollection.RemoveAll
+'Repositoriescollection.Add(strRootFolder&"\ObjectRepository\Login.tsr")
+'Repositoriescollection.Add(strRootFolder&"\ObjectRepository\CalendarType.tsr")
+'Repositoriescollection.Add(strRootFolder&"\ObjectRepository\CalendarBuilder.tsr")
+'Repositoriescollection.Add(strRootFolder&"\ObjectRepository\CalendarMapping.tsr")
+'Repositoriescollection.Add(strRootFolder&"\ObjectRepository\BusinessCalendar.tsr")
+'Repositoriescollection.Add(strRootFolder&"\ObjectRepository\ReportGenerator.tsr")
+'Repositoriescollection.Add(strRootFolder&"\ObjectRepository\TSAonLine.tsr")
+'Repositoriescollection.Add(strRootFolder&"\ObjectRepository\TSAoffLine.tsr")
+'Repositoriescollection.Add(strRootFolder&"\ObjectRepository\InquiryFramework.tsr")
+'Repositoriescollection.Add(strRootFolder&"\ObjectRepository\SupplementaryDataLoad.tsr")
+
+
+'Creating newfile name for executionlogs and reports as per date
+UtilFunction.strFileNameAsDate = Replace(Replace(Replace(now(),"/","-"),":","-")," ","-")
+Dim objFSO
+Dim objResFolder
+Dim objSreenShotFolder
+Dim objhtmlFolder
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+	Set objResFolder = objFSO.CreateFolder(strRootFolder&"\TestResults\"&UtilFunction.strFileNameAsDate)
+	Set objSreenShotFolder = objFSO.CreateFolder(objResFolder&"\Screenshots")
+	Set objhtmlFolder = objFSO.CreateFolder(objResFolder&"\html")
+'MsgBox objResFolder
+Set objFSO = Nothing
+
+UtilFunction.ErrSreenShots = objSreenShotFolder
+UtilFunction.strLogFile = objResFolder&"\ExecutionLog"&UtilFunction.strFileNameAsDate&".txt"
+UtilFunction.strTestCaseStatus = objResFolder&"\TestCaseStatus"&UtilFunction.strFileNameAsDate&".xlsx"
+'UtilFunction.DataDrivenResults = objResFolder&"\DataDriven_CT"&UtilFunction.strFileNameAsDate&".xlsx"
+UtilFunction.detailedResults = objResFolder&"\detailedResults.txt"
+
+'html report files
+UtilFunction.strhtmlpath = objResFolder&"\htmlreport"&UtilFunction.strFileNameAsDate&".html" 'final html report file
+UtilFunction.varhtmlReport1path = objhtmlFolder&"\htmlReport1.txt"
+UtilFunction.varhtmlReport2path = objhtmlFolder&"\htmlReport2.txt"
+UtilFunction.varhtmlReport3apath = objhtmlFolder&"\htmlReport3a.txt"
+UtilFunction.varhtmlReport3bpath = objhtmlFolder&"\htmlReport3b.txt"
+UtilFunction.varhtmlReport4apath = objhtmlFolder&"\htmlReport4a.txt"
+UtilFunction.varhtmlReport4bpath = objhtmlFolder&"\htmlReport4b.txt"
+UtilFunction.strResExcelChartTemplate = strRootFolder&"\TestResults\ExcelChart.xlsm"
+UtilFunction.strResExcelChart = objhtmlFolder&"\ExcelChart.xlsm"
+
+'creating html report files
+UtilFunction.CreateTextFile(UtilFunction.strhtmlpath)
+UtilFunction.CreateTextFile(UtilFunction.varhtmlReport1path)
+UtilFunction.CreateTextFile(UtilFunction.varhtmlReport2path)
+UtilFunction.CreateTextFile(UtilFunction.varhtmlReport3bpath)
+UtilFunction.CreateTextFile(UtilFunction.varhtmlReport4apath)
+UtilFunction.CreateTextFile(UtilFunction.varhtmlReport4bpath)
+
+
+'Creating logfile in results\ExecutionLogs folder
+UtilFunction.CreateTextFile(UtilFunction.strLogFile)
+UtilFunction.CreateTextFile(UtilFunction.detailedResults)
+
+'Kill the browser processes
+Call KillProcess("chrome.exe")
+Call KillProcess("EXCEL.EXE")
+
+'Adding datatable sheets to add data from external excel files
+'DataTable.AddSheet "Country"
+DataTable.AddSheet "Module"
+DataTable.AddSheet "TestCase"
+DataTable.AddSheet "TestSteps"
+DataTable.AddSheet "TestData"
+DataTable.AddSheet "CalendarType"
+DataTable.AddSheet "CalendarBuilder"
+DataTable.AddSheet "CalendarMapping"
+DataTable.AddSheet "BusinessCalendar"
+DataTable.AddSheet "ReportGenerator"
+DataTable.AddSheet "DrillDown"
+DataTable.AddSheet "TSAoffline"
+DataTable.AddSheet "TSAonline"
+DataTable.AddSheet "InquiryFramework"
+DataTable.AddSheet "SupplementaryDataLoad"
+
+'Importing data from external excel files
+DataTable.ImportSheet strRootFolder&"\TestController\Controller.xlsx", 1, 3 'Module sheet
+DataTable.ImportSheet strRootFolder&"\TestController\Controller.xlsx", 2, 4 'TestCase sheet
+DataTable.ImportSheet strRootFolder&"\TestController\Controller.xlsx", 3, 5 'TestSteps sheet
+
+'Test data files
+DataTable.ImportSheet strRootFolder&"\TestData\TestData.xlsx", 1, 6 'TestData sheet
+
+Dim strUrl: strUrl = DataTable(1,"TestData")
+Dim strUserName: strUserName = DataTable(2,"TestData")
+Dim strPassword: strPassword = DataTable(3,"TestData")
+Dim strUserName2: strUserName2 = DataTable(4,"TestData")
+Dim strPassword2: strPassword2 = DataTable(5,"TestData")
+
+'Starting the test
+Call TestInitialization()
+
+'Logic to execute test cases based on execution flag(y/n)
+Dim intCalTypeRowCount
+Dim intl, intCtPassCounter
+Dim strCountry, intCountryRowCount, intCountry, strCountrydata
+Dim intModcolCount
+intModcolCount = DataTable.GetSheet("Module").GetParameterCount
+Dim intModuleFlag
+
+For intCountry = 3 To intModcolCount
+	UtilFunction.inthtmlPassCount = 0
+	UtilFunction.inthtmlFailCount = 0
+	UtilFunction.inthtmlSkipCount = 0
+	strCountry = DataTable.GetSheet("Module").GetParameter(intCountry).Name
+	UtilFunction.strCountry = strCountry
+	'Importing test data with respective to country
+	DataTable.ImportSheet strRootFolder&"\TestData\TestData"&strCountry&".xlsx", 2, 7 'CalendarType sheet
+	DataTable.ImportSheet strRootFolder&"\TestData\TestData"&strCountry&".xlsx", 3, 8 'CalendarBuilder
+	DataTable.ImportSheet strRootFolder&"\TestData\TestData"&strCountry&".xlsx", 4, 9 'CalendarMapping
+	DataTable.ImportSheet strRootFolder&"\TestData\TestData"&strCountry&".xlsx", 5, 10 'BusinessCalendar
+	DataTable.ImportSheet strRootFolder&"\TestData\TestData"&strCountry&".xlsx", 6, 11 'ReportGenerator
+	DataTable.ImportSheet strRootFolder&"\TestData\TestData"&strCountry&".xlsx", 7, 12 'DrillDown
+	DataTable.ImportSheet strRootFolder&"\TestData\TestData"&strCountry&".xlsx", 8, 13 'TSAoffline
+	DataTable.ImportSheet strRootFolder&"\TestData\TestData"&strCountry&".xlsx", 9, 14 'TSAonline
+	DataTable.ImportSheet strRootFolder&"\TestData\TestData"&strCountry&".xlsx", 10, 15 'InquiryFramework
+	DataTable.ImportSheet strRootFolder&"\TestData\TestData"&strCountry&".xlsx", 11, 16 'SupplementaryDataLoad
+	
+	strCountry = Replace(strCountry,"_"," ")
+	Dim adminissueFlag: adminissueFlag = 0 'it's used to handle the application issue: "Run Report Failed. Please contact your administrator." and "Request failed"
+		intModuleFlag = 0
+		intModuleRowCount = DataTable.GetSheet("Module").GetRowCount
+		For inti = 1 To intModuleRowCount
+			DataTable.SetCurrentRow(inti)
+			strModExecutionFlag = DataTable(intCountry,"Module")
+			If Ucase(strModExecutionFlag) = "Y" Then
+				intModuleFlag = intModuleFlag+1
+						If intModuleFlag = 1 Then
+							Call htmlReport3(UtilFunction.varhtmlReport3apath,strCountry,"Pass") 'Calling htmlReport3 to write pass report
+							Call htmlReport3(UtilFunction.varhtmlReport3bpath,strCountry,"Fail") 'Calling htmlReport3 to write fail report
+						End If
+				strModID = DataTable(1,"Module")
+				intTCCount = DataTable.GetSheet("TestCase").GetRowCount
+				For intj = 1 To intTCCount
+					DataTable.SetCurrentRow(intj)
+					strTCExecutionFlag = DataTable(3,"TestCase")
+					strTCModID = DataTable(4,"TestCase")
+					If Ucase(strTCExecutionFlag) = "Y" AND strTCModID = strModID Then
+						strTCID = DataTable(1,"TestCase")
+						intTSRowCount = DataTable.GetSheet("TestSteps").GetRowCount
+						For intk = 1 To intTSRowCount
+							DataTable.SetCurrentRow(intk)
+							strTSTCID = DataTable(6,"TestSteps")
+							If strTSTCID = strTCID Then
+								strKeyword = DataTable(4,"TestSteps")
+								Select Case strKeyword
+									Case "li"
+										Call Login(strUrl, strUserName, strPassword, strCountry)
+									Case "rg"
+										UtilFunction.DataDrivenResults = objResFolder&"\DataDriven_"&strCountry&"_ReportGenertor.xlsx"
+										intCalTypeRowCount = DataTable.GetSheet("ReportGenerator").GetRowCount
+										intCtPassCounter = 1
+										'Dim adminissueFlag: adminissueFlag = 0 'it's used to handle the application issue: "Run Report Failed. Please contact your administrator." and "Request failed"
+										For intl = 1 To intCalTypeRowCount
+											DataTable.SetCurrentRow(intl)
+											DataTable(12,"ReportGenerator") = ReportGenerator(DataTable(1,"ReportGenerator"),DataTable(2,"ReportGenerator"),DataTable(3,"ReportGenerator"),DataTable(4,"ReportGenerator"),DataTable(5,"ReportGenerator"),DataTable(6,"ReportGenerator"),DataTable(7,"ReportGenerator"),DataTable(8,"ReportGenerator"),DataTable(9,"ReportGenerator"),DataTable(10,"ReportGenerator"),intl,adminissueFlag)
+											If DataTable(12,"ReportGenerator") = "Request failed" AND intl < intCalTypeRowCount Then
+												adminissueFlag = 1
+												' Added on 16/4/2018 Saurabh Sharma to restart the browser
+												Call KillProcess("chrome.exe")
+												
+												Call Login(strUrl, strUserName, strPassword, strCountry)
+												'intl = intl+1
+												'DataTable.SetCurrentRow(intl)
+												'DataTable(12,"ReportGenerator") = ReportGenerator(DataTable(1,"ReportGenerator"),DataTable(2,"ReportGenerator"),DataTable(3,"ReportGenerator"),DataTable(4,"ReportGenerator"),DataTable(5,"ReportGenerator"),DataTable(6,"ReportGenerator"),DataTable(7,"ReportGenerator"),DataTable(8,"ReportGenerator"),DataTable(9,"ReportGenerator"),DataTable(10,"ReportGenerator"),intl,adminissueFlag)
+												'adminissueFlag = 0
+											' Else loop to check the session time out. Saurabh 17/4/2018	
+											ElseIf DataTable(12,"ReportGenerator") = "Your session will expire in" AND intl < intCalTypeRowCount Then
+												adminissueFlag = 1
+												Call KillProcess("chrome.exe")
+												Call Login(strUrl, strUserName, strPassword, strCountry)
+												'intl = intl+1
+												'DataTable.SetCurrentRow(intl)
+												'DataTable(12,"ReportGenerator") = ReportGenerator(DataTable(1,"ReportGenerator"),DataTable(2,"ReportGenerator"),DataTable(3,"ReportGenerator"),DataTable(4,"ReportGenerator"),DataTable(5,"ReportGenerator"),DataTable(6,"ReportGenerator"),DataTable(7,"ReportGenerator"),DataTable(8,"ReportGenerator"),DataTable(9,"ReportGenerator"),DataTable(10,"ReportGenerator"),intl,adminissueFlag)
+												'adminissueFlag = 0
+																					
+											ElseIf DataTable(12,"ReportGenerator") = "Run Report Failed. Please contact your administrator." Then
+												adminissueFlag = 1
+												' Added on 16/4/2018 Saurabh Sharma to restart the browser
+												Call KillProcess("chrome.exe")
+												
+												Call Login(strUrl, strUserName, strPassword, strCountry)
+												
+												' Added on 16/4/2018 Saurabh Sharma to skip the failed and time taking reports
+												'intl = intl+1
+												'DataTable.SetCurrentRow(intl)
+												'DataTable(12,"ReportGenerator") = ReportGenerator(DataTable(1,"ReportGenerator"),DataTable(2,"ReportGenerator"),DataTable(3,"ReportGenerator"),DataTable(4,"ReportGenerator"),DataTable(5,"ReportGenerator"),DataTable(6,"ReportGenerator"),DataTable(7,"ReportGenerator"),DataTable(8,"ReportGenerator"),DataTable(9,"ReportGenerator"),DataTable(10,"ReportGenerator"),intl,adminissueFlag)
+												'adminissueFlag = 0
+											End If
+											If DataTable(12,"ReportGenerator") = "Pass - ReportGenerator is successful" Then
+												DataTable(11,"ReportGenerator") = "Pass"
+												intCtPassCounter = intCtPassCounter+1
+											Else
+												DataTable(11,"ReportGenerator") = "Fail"
+											End If
+										Next
+											DataTable.SetCurrentRow(intj)
+										If intCtPassCounter = intl Then
+											DataTable(5,"TestCase") = "Pass - ReportGeneratorr is successful"
+											Call htmlReport4(UtilFunction.varhtmlReport4apath,strTCID,DataTable(2,"TestCase"),"Pass",DataTable(5,"TestCase"))
+											UtilFunction.inthtmlPassCount = UtilFunction.inthtmlPassCount+1
+										Else
+											DataTable(5,"TestCase") = "Fail - ReportGenerator is not successful"
+											Call htmlReport4(UtilFunction.varhtmlReport4bpath,strTCID,DataTable(2,"TestCase"),"Fail",DataTable(5,"TestCase"))
+											UtilFunction.inthtmlFailCount = UtilFunction.inthtmlFailCount+1
+										End If
+										DataTable.ExportSheet UtilFunction.DataDrivenResults, "ReportGenerator"
+									Case "ifw"
+										UtilFunction.DataDrivenResults = objResFolder&"\DataDriven_"&strCountry&"_InquiryFramework.xlsx"
+										intCalTypeRowCount = DataTable.GetSheet("InquiryFramework").GetRowCount
+										intCtPassCounter = 1
+										For intl = 1 To intCalTypeRowCount
+											DataTable.SetCurrentRow(intl)
+											DataTable(18,"InquiryFramework") = InquiryFrameWork(DataTable(1,"InquiryFramework"),DataTable(2,"InquiryFramework"),DataTable(3,"InquiryFramework"),DataTable(4,"InquiryFramework"),DataTable(5,"InquiryFramework"),DataTable(6,"InquiryFramework"),DataTable(7,"InquiryFramework"),DataTable(8,"InquiryFramework"),DataTable(9,"InquiryFramework"),intl,objResFolder)
+											If DataTable(18,"InquiryFramework") = "Inquiry Framework is successful" Then
+												intCtPassCounter = intCtPassCounter+1
+												DataTable(17,"InquiryFramework") = "Pass"
+											Else
+												DataTable(17,"InquiryFramework") = "Fail"
+											End If
+										Next
+											DataTable.SetCurrentRow(intj)
+										If intCtPassCounter = intl Then
+											DataTable(5,"TestCase") = "Pass - Inquiry Framework is successful"
+											Call htmlReport4(UtilFunction.varhtmlReport4apath,strTCID,DataTable(2,"TestCase"),"Pass",DataTable(5,"TestCase"))
+											UtilFunction.inthtmlPassCount = UtilFunction.inthtmlPassCount+1
+										Else
+											DataTable(5,"TestCase") = "Fail - Inquiry Framework is not successful"
+											Call htmlReport4(UtilFunction.varhtmlReport4bpath,strTCID,DataTable(2,"TestCase"),"Fail",DataTable(5,"TestCase"))
+											UtilFunction.inthtmlFailCount = UtilFunction.inthtmlFailCount+1
+										End If
+										DataTable.ExportSheet UtilFunction.DataDrivenResults, "InquiryFramework"
+									Case "fuld"
+										UtilFunction.DataDrivenResults = objResFolder&"\DataDriven_"&strCountry&"_SupplementaryDataLoad.xlsx"
+										intCalTypeRowCount = DataTable.GetSheet("SupplementaryDataLoad").GetRowCount
+										'msgbox intCalTypeRowCount
+										intCtPassCounter = 1
+										adminissueFlag = 0
+										'Dim adminissueFlag: adminissueFlag = 0 'it's used to handle the application issue: "Run Report Failed. Please contact your administrator." and "Request failed"
+										For intl = 1 To intCalTypeRowCount
+											DataTable.SetCurrentRow(intl)
+											DataTable(9,"SupplementaryDataLoad") = SupplementaryDataLoad(DataTable(1,"SupplementaryDataLoad"),DataTable(2,"SupplementaryDataLoad"),DataTable(3,"SupplementaryDataLoad"),DataTable(4,"SupplementaryDataLoad"),strRootFolder,DataTable(5,"SupplementaryDataLoad"),intl,adminissueFlag,strUserName)
+											'msgbox DataTable(9,"SupplementaryDataLoad")
+											If DataTable(9,"SupplementaryDataLoad") = "Failed - Supplementary dataload is not successful" AND intl < intCalTypeRowCount Then
+												adminissueFlag = 1
+												Call Logout()
+												Call KillProcess("chrome.exe")
+												Call Login(strUrl, strUserName, strPassword, strCountry)
+											End If
+											If DataTable(9,"SupplementaryDataLoad") = "Pass - Supplementary Dataload is successful" Then
+												adminissueFlag = 1
+												Call Logout()
+												Call KillProcess("chrome.exe")
+												Call Login(strUrl, strUserName2, strPassword2, strCountry)
+												DataTable(9,"SupplementaryDataLoad") = FileApproveReject(DataTable(1,"SupplementaryDataLoad"),DataTable(2,"SupplementaryDataLoad"),DataTable(3,"SupplementaryDataLoad"),DataTable(4,"SupplementaryDataLoad"),DataTable(5,"SupplementaryDataLoad"),DataTable(6,"SupplementaryDataLoad"),DataTable(7,"SupplementaryDataLoad"),intl,adminissueFlag,strUserName)
+												If DataTable(9,"SupplementaryDataLoad") = "Failed - File rejection is not successful" OR DataTable(9,"SupplementaryDataLoad") = "Failed - File Approval is not successful" Then
+													adminissueFlag = 1
+													DataTable(8,"SupplementaryDataLoad") = "Fail"
+													Call Logout()
+													Call KillProcess("chrome.exe")
+													Call Login(strUrl, strUserName, strPassword, strCountry)
+												Else
+													adminissueFlag = 1
+													intCtPassCounter = intCtPassCounter+1
+													DataTable(8,"SupplementaryDataLoad") = "Pass"
+													Call Logout()
+													Call KillProcess("chrome.exe")
+													Call Login(strUrl, strUserName, strPassword, strCountry)
+												End If
+											End If
+										Next	
+										DataTable.SetCurrentRow(intj)
+										If intCtPassCounter = intl Then
+											DataTable(5,"TestCase") = "Pass - Supplementary Dataload is successful"
+											Call htmlReport4(UtilFunction.varhtmlReport4apath,strTCID,DataTable(2,"TestCase"),"Pass",DataTable(5,"TestCase"))
+											UtilFunction.inthtmlPassCount = UtilFunction.inthtmlPassCount+1
+										Else
+											DataTable(5,"TestCase") = "Failed - Supplementary dataload is not successful"
+											Call htmlReport4(UtilFunction.varhtmlReport4bpath,strTCID,DataTable(2,"TestCase"),"Fail",DataTable(5,"TestCase"))
+											UtilFunction.inthtmlFailCount = UtilFunction.inthtmlFailCount+1
+										End If
+										DataTable.ExportSheet UtilFunction.DataDrivenResults, "SupplementaryDataLoad"
+									Case "lo"
+										'Endcase
+								End Select
+								If Err.Number <> 0 Then
+									UtilFunction.WriteLog "Execution error: Error Number - "&Err.Number&" and Error Description - "&Err.Description
+									Err.Clear
+								End If
+							End If
+						Next
+					End If
+				Next
+			End If
+		Next
+	'Writing Country results in header
+	Call ConsolidateDetailReport(UtilFunction.varhtmlReport3apath, UtilFunction.varhtmlReport4apath)
+	Call ConsolidateDetailReport(UtilFunction.varhtmlReport3bpath, UtilFunction.varhtmlReport4bpath)
+	Call ConsolidateDetailReport(UtilFunction.varhtmlReport3apath, UtilFunction.varhtmlReport3bpath)
+	
+	UtilFunction.CreateTextFile(UtilFunction.varhtmlReport3bpath)
+	UtilFunction.CreateTextFile(UtilFunction.varhtmlReport4apath)
+	UtilFunction.CreateTextFile(UtilFunction.varhtmlReport4bpath)
+	
+	'Count for pie chart
+	UtilFunction.intchartPass = UtilFunction.intchartPass+UtilFunction.inthtmlPassCount
+	UtilFunction.intchartFail = UtilFunction.intchartFail+UtilFunction.inthtmlFailCount
+	UtilFunction.intchartSkip = UtilFunction.intchartSkip+UtilFunction.inthtmlSkipCount
+	
+	UtilFunction.inthtmlTotalCount = UtilFunction.inthtmlPassCount+UtilFunction.inthtmlFailCount
+	Call htmlReport2(UtilFunction.varhtmlReport2path,strCountry,UtilFunction.inthtmlPassCount,UtilFunction.inthtmlFailCount,UtilFunction.inthtmlSkipCount,UtilFunction.inthtmlTotalCount)
+
+Next
+'html report supported functions
+Call CreateExcelChart(UtilFunction.intchartPass,UtilFunction.intchartFail,UtilFunction.intchartSkip,UtilFunction.strResExcelChartTemplate, UtilFunction.strResExcelChart)
+Call RunMacro(UtilFunction.strResExcelChart, "Create_image")' "Create_image" is macro name
+Call htmlReport1(UtilFunction.varhtmlReport1path, UtilFunction.strFileNameAsDate, objhtmlFolder&"\ResultChart.png")
+Call htmlConsolidate(UtilFunction.strhtmlpath, UtilFunction.varhtmlReport1path, UtilFunction.varhtmlReport2path,UtilFunction.varhtmlReport3apath)
+
+'Exporting test results to excel sheet
+DataTable.ExportSheet UtilFunction.strTestCaseStatus, "TestCase"
+'DataTable.ExportSheet UtilFunction.DataDrivenResults, "CalendarBuilder"
+
+'Closing the test
+Call TestClosure(1)
+'**************************End of Driver script********************
